@@ -5,7 +5,7 @@
 
 int main(){
 
-    Basic Example of cpp
+
     std::cout << "Example of cpp \n";
     float a = 1.0, b = 2.0;
     std::cout << a << std::endl;
