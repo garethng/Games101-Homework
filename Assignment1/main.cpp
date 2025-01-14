@@ -19,16 +19,40 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
     return view;
 }
 
+Eigen::Matrix4f get_rotation_matrix(float rotation_angle, Eigen::Vector3f axis)
+{
+    Eigen::Matrix4f rotate = Eigen::Matrix4f::Identity();
+    Eigen::Matrix3f first = std::cos(rotation_angle/180*MY_PI) * Eigen::Matrix3f::Identity();
+    
+    Eigen::Matrix3f second;
+    second = axis * axis.transpose();
+    second *= (1 - std::cos(rotation_angle/180*MY_PI));
+    
+    Eigen::Matrix3f third;
+    third << 0, -axis[2], axis[1],
+            axis[2], 0, -axis[0], 
+            -axis[1], axis[0], 0;
+    third *= std::sin(rotation_angle/180*MY_PI);
+    
+    Eigen::Matrix3f rotation_3d = Eigen::Matrix3f::Identity();
+    rotation_3d = first + second + third;
+    rotate.block<3, 3>(0, 0) = rotation_3d;
+    rotate.row(3) << 0, 0, 1, 0;
+    return rotate;
+}
+
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
-    Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
+    // Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
 
-    Eigen::Matrix4f rotate;
-    rotate << std::cos(rotation_angle/180*MY_PI), -std::sin(rotation_angle/180*MY_PI), 0, 0,
-    std::sin(rotation_angle/180*MY_PI), std::cos(rotation_angle/180*MY_PI), 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1;
-    model = rotate * model;
+    // Eigen::Matrix4f rotate;
+    // rotate << std::cos(rotation_angle/180*MY_PI), -std::sin(rotation_angle/180*MY_PI), 0, 0,
+    // std::sin(rotation_angle/180*MY_PI), std::cos(rotation_angle/180*MY_PI), 0, 0,
+    // 0, 0, 1, 0,
+    // 0, 0, 0, 1;
+    // model = rotate * model;
+
+    Eigen::Matrix4f model = get_rotation_matrix(rotation_angle, Eigen::Vector3f(0, 0, 1));
     // TODO: Implement this function
     // Create the model matrix for rotating the triangle around the Z axis.
     // Then return it.
