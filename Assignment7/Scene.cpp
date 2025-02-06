@@ -83,34 +83,38 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     if (!inter.happened) {
         return backgroundColor;
     }
-    if (inter.obj->hasEmit()) {
-        return inter.emit;
-    }
+    
+    // 计算直接光照
     Vector3f L_dir = Vector3f(0.0f);
     Vector3f L_indir = Vector3f(0.0f);
-    Vector3f p = ray.origin;
-    Vector3f wo = ray.direction;
-
+    float pdf;
+    Intersection lightInter;
+    sampleLight(lightInter, pdf);
+    if (inter.obj->hasEmit()) {
+        return lightInter.emit;
+    }
+    //获取入射角和反射角
     Vector3f x = inter.coords;
-    Vector3f N = inter.normal;
-    Vector3f ws = normalize(inter.emit - x);
+    Vector3f x_prime = lightInter.coords;
+    Vector3f N = inter.normal.normalized();
+    Vector3f N_prime = lightInter.normal.normalized();
+    Vector3f ws = normalize(x_prime - x);
+    Vector3f wo = normalize(-ray.direction);
 
-    float pdf = inter.m->pdf(wo, ws, N);
-    float distance = (x - p).norm();
-    sampleLight(inter, pdf);
+    float distance = (x - x_prime).norm();
+    
 
-    Ray shadowRay(p, ws);
+    Ray shadowRay(x, ws);
     Intersection shadowInter = intersect(shadowRay);
     
     // 检查是否被遮挡（注意要留一个小的容差值epsilon，避免自遮挡）
     bool isBlocked = shadowInter.happened && 
                      shadowInter.distance + 1e-3 < distance;
     if (!isBlocked) {
-        L_dir = inter.emit;
+        L_dir = lightInter.emit;
         Vector3f f_r = inter.m->eval(wo, ws, N);   
-        Vector3f N_prime = inter.normal;
         float cos_theta = dotProduct(ws, N);
-        float cos_theta_prime = dotProduct(ws, N_prime);
+        float cos_theta_prime = -dotProduct(ws, N_prime);
         float pdf_light = pdf;
         L_dir = L_dir * f_r * cos_theta * cos_theta_prime / pow(distance, 2) / pdf_light;
     }
