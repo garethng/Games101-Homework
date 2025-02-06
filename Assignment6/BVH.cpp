@@ -217,29 +217,35 @@ Intersection BVHAccel::Intersect(const Ray& ray) const
 
 Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
 {
-    // TODO Traverse the BVH to find intersection
     Intersection isect;
     std::vector<BVHBuildNode*> nodes_queue;
     nodes_queue.push_back(node);
+    float closest_so_far = ray.t_max;  // 记录当前找到的最近交点距离
+//最关键的问题是遍历顺序不正确。当前实现使用队列方式遍历，但没有考虑相交点的距离顺序，这可能导致错过更近的相交点。
+// 当找到一个相交点时立即返回，但这个相交点可能不是最近的。
     while (!nodes_queue.empty()) {
-        BVHBuildNode* node = nodes_queue.back();
+        BVHBuildNode* curr_node = nodes_queue.back();
         nodes_queue.pop_back();
-        std::array<int, 3> dirIsNeg = {ray.direction.x > 0, ray.direction.y > 0, ray.direction.z > 0};
-        if (!node->bounds.IntersectP(ray, ray.direction_inv, dirIsNeg)) {
+        
+        std::array<int, 3> dirIsNeg = {ray.direction.x < 0, ray.direction.y < 0, ray.direction.z < 0};
+        
+        // 如果与包围盒不相交，或者包围盒的最近点比当前最近交点还远，则跳过
+        if (!curr_node->bounds.IntersectP(ray, ray.direction_inv, dirIsNeg)) {
             continue;
         }
-        if (node->left) {
-            nodes_queue.push_back(node->left);
-        }
-        if (node->right) {
-            nodes_queue.push_back(node->right);
-        }
 
-        if (node->object) {
-            isect = node->object->getIntersection(ray);
-            if (isect.happened && isect.distance < ray.t_max) {
-                return isect;
+        if (curr_node->left == nullptr && curr_node->right == nullptr) {
+            // 叶子节点，计算与物体的交点
+            Intersection temp = curr_node->object->getIntersection(ray);
+            // 更新最近交点
+            if (temp.happened && temp.distance < closest_so_far) {
+                closest_so_far = temp.distance;
+                isect = temp;
             }
+        } else {
+            // 非叶子节点，将子节点加入队列
+            if (curr_node->left) nodes_queue.push_back(curr_node->left);
+            if (curr_node->right) nodes_queue.push_back(curr_node->right);
         }
     }
     return isect;

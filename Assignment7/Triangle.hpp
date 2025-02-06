@@ -231,7 +231,7 @@ inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
 
 inline Intersection Triangle::getIntersection(Ray ray)
 {
-    Intersection inter;
+   Intersection inter;
 
     if (dotProduct(ray.direction, normal) > 0)
         return inter;
@@ -253,8 +253,17 @@ inline Intersection Triangle::getIntersection(Ray ray)
     t_tmp = dotProduct(e2, qvec) * det_inv;
 
     // TODO find ray triangle intersection
-
-    return inter;
+    
+    if (t_tmp <= 0) return inter;
+    
+    inter.happened = true;
+    inter.coords = ray(t_tmp);
+    inter.normal = normal;
+    inter.obj = this;
+    inter.m = m;
+    inter.distance = t_tmp;
+    
+    
 }
 
 inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const
